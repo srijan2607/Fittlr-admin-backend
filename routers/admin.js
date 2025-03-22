@@ -9,7 +9,7 @@ const {
 
 router.post("/register", register_admin); // Register a new admin
 router.get("/all", get_all_admin); // Get all admins
-router.put("/update", update_admin); // Update an admin
-router.delete("/delete", delete_admin); // Delete an admin
+router.patch("/update/:id", update_admin); // Update an admin
+router.delete("/delete/:id", delete_admin); // Delete an admin
 
 module.exports = router; // Export the router to be used in the app.js file
