@@ -6,18 +6,7 @@ const { BadRequestError, UnauthenticatedError } = require("../../errors");
 const { createJWT } = require("../../services/jwt_create");
 const { hashPassword } = require("../../services/password_auth");
 
-/**
- * Registers a new admin admin.
- *
- * @param {Object} req - The request object.
- * @param {Object} req.body - The body of the request.
- * @param {string} req.body.name - The name of the admin admin.
- * @param {string} req.body.email - The email of the admin admin.
- * @param {string} req.body.password - The password of the admin admin.
- * @param {Object} res - The response object.
- * @returns {Promise<void>} - A promise that resolves to void.
- * @throws {BadRequestError} - If a user with the given email already exists. 
- */
+
 const get_all_admin = async (req, res) => {
   const admin = await prisma.admin.findMany();
   res.status(StatusCodes.OK).json({ admin , count : admin.length});

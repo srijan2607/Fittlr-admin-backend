@@ -2,19 +2,38 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const { StatusCodes } = require("http-status-codes");
 const { NotFoundError, BadRequestError } = require("../../errors");
-const { number } = require("joi");
+const cloudflareImageService = require("../../services/cloudflare");
 
 // CREATE: Add a new gym with opening hours
 const createGym = async (req, res) => {
   try {
-    const { name, location, imageUrl, MaxCapacity, openingHours, userId } =
-      req.body;
+    const { name, location, MaxCapacity, openingHours, userId } = req.body;
+    let imageUrl = req.body.imageUrl;
 
     // Validate required fields
-    if (!name || !location || !imageUrl || !MaxCapacity) {
+    if (!name || !location || !MaxCapacity) {
       throw new BadRequestError(
-        "Missing required fields: name, location, imageUrl, and MaxCapacity are required"
+        "Missing required fields: name, location, and MaxCapacity are required"
       );
+    }
+
+    // Handle image upload if file is provided
+    if (req.files && req.files.Gym_image && req.files.Gym_image.length > 0) {
+      const imageFile = req.files.Gym_image[0];
+      const fileName = `gym_${Date.now()}_${imageFile.originalname}`;
+
+      // Upload image to Cloudflare
+      imageUrl = await cloudflareImageService.uploadImage(
+        imageFile.buffer,
+        fileName
+      );
+
+      console.log("Image uploaded to Cloudflare:", imageUrl);
+    }
+
+    // Check if we have an image URL from either the file upload or request body
+    if (!imageUrl) {
+      throw new BadRequestError("Image is required");
     }
 
     // Create the gym with its opening hours in a transaction
@@ -199,8 +218,8 @@ const getGymById = async (req, res) => {
 const updateGym = async (req, res) => {
   try {
     const { id } = req.body;
-    const { name, location, imageUrl, MaxCapacity, openingHours, userId } =
-      req.body;
+    const { name, location, MaxCapacity, openingHours, userId } = req.body;
+    let { imageUrl } = req.body;
 
     // Check if gym exists
     const existingGym = await prisma.gym.findUnique({
@@ -209,6 +228,27 @@ const updateGym = async (req, res) => {
 
     if (!existingGym) {
       throw new NotFoundError(`Gym with ID ${id} not found`);
+    }
+
+    // Handle image upload if file is provided
+    if (req.files && req.files.Gym_image && req.files.Gym_image.length > 0) {
+      const imageFile = req.files.Gym_image[0];
+      const fileName = `gym_${Date.now()}_${imageFile.originalname}`;
+
+      // Upload image to Cloudflare
+      imageUrl = await cloudflareImageService.uploadImage(
+        imageFile.buffer,
+        fileName
+      );
+
+      // If there was a previous image, delete it
+      if (existingGym.imageUrl && existingGym.imageUrl.includes("cloudflare")) {
+        try {
+          await cloudflareImageService.deleteImage(existingGym.imageUrl);
+        } catch (err) {
+          console.error("Failed to delete old image:", err);
+        }
+      }
     }
 
     // Update gym in a transaction to handle opening hours
@@ -384,10 +424,10 @@ const updateCurrentUsers = async (req, res) => {
 };
 
 module.exports = {
-    createGym,
-    getAllGyms,
-    getGymById,
-    updateGym,
-    deleteGym,
-    updateCurrentUsers,
-}
+  createGym,
+  getAllGyms,
+  getGymById,
+  updateGym,
+  deleteGym,
+  updateCurrentUsers,
+};

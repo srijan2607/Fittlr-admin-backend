@@ -141,7 +141,7 @@ const getAllMachines = async (req, res) => {
 // READ: Get a single machine by ID
 const getMachineById = async (req, res) => {
   try {
-    const { id } = req.body;
+    const { id } = req.params;
 
     const machine = await prisma.machine.findUnique({
       where: { id: Number(id) },
@@ -193,7 +193,7 @@ const getMachineById = async (req, res) => {
 // UPDATE: Update a machine
 const updateMachine = async (req, res) => {
   try {
-    const { id } = req.body;
+    const { id } = req.params;
     const {
       name,
       description,
@@ -262,7 +262,7 @@ const updateMachine = async (req, res) => {
 // DELETE: Delete a machine
 const deleteMachine = async (req, res) => {
   try {
-    const { id } = req.body;
+    const { id } = req.params;
 
     // Check if machine exists
     const existingMachine = await prisma.machine.findUnique({
@@ -321,7 +321,7 @@ const deleteMachine = async (req, res) => {
 // UPDATE: Update machine status specifically
 const updateMachineStatus = async (req, res) => {
   try {
-    const { id } = req.body;
+    const { id } = req.params;
     const { status } = req.body;
 
     if (!status) {
@@ -381,7 +381,7 @@ const updateMachineStatus = async (req, res) => {
 // UPDATE: Toggle service needs flag
 const updateServiceNeeds = async (req, res) => {
   try {
-    const { id } = req.body;
+    const { id } = req.params;
     const { needService } = req.body;
 
     if (needService === undefined) {
@@ -433,7 +433,7 @@ const updateServiceNeeds = async (req, res) => {
 // UPDATE: Increment machine uses
 const incrementMachineUses = async (req, res) => {
   try {
-    const { id } = req.body;
+    const { id } = req.params;
     const { increment = 1 } = req.body;
 
     // Check if machine exists

@@ -3,7 +3,7 @@ const { UnauthenticatedError } = require("../errors");
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
-const authenticateUser = async (req, res, next) => {
+const authenticateAdmin = async (req, res, next) => {
   if (req.isAuthenticated() && req.user) {
     return next();
   }
@@ -53,4 +53,4 @@ const authenticateUser = async (req, res, next) => {
   }
 };
 
-module.exports = authenticateUser;
+module.exports = authenticateAdmin;

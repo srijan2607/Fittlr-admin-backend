@@ -7,10 +7,28 @@ const express = require("express");
 const app = express();
 const { PrismaClient } = require("@prisma/client");
 const cloudflareService = require("./services/cloudflare");
-const prisma = new PrismaClient();r
+const prisma = new PrismaClient(); // Note: fixed typo - removed the 'r' after PrismaClient();
 const { StatusCodes } = require("http-status-codes");
 const cache = require("./services/cache");
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+const authenticate = require("./middleware/authentication");
+
+// Routes
+const authRouter = require("./routers/auth");
+const adminRouter = require("./routers/admin");
+const ticketRouter = require("./routers/tickets");
+const machineRouter = require("./routers/machine");
+const dashboardRouter = require("./routers/dashbord");
+const gymRouter = require("./routers/gym");
+
+// Use Routes
+app.use("/api/v1/admin/auth", authRouter);
+app.use("/api/v1/admin/admin", adminRouter);
+app.use("/api/v1/admin/tickets", ticketRouter);
+app.use("/api/v1/admin/machines", machineRouter);
+app.use("/api/v1/admin/dashboard", dashboardRouter);
+app.use("/api/v1/admin/gym", gymRouter);
 
 // Security Packages
 const helmet = require("helmet");
@@ -47,6 +65,15 @@ app.use(helmet());
 app.use(cors(corsOptions));
 app.use(xss());
 
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({
+    success: false,
+    message: "Internal Server Error",
+    error: process.env.NODE_ENV === "production" ? null : err.message,
+  });
+});
 
 const port = process.env.PORT || 7800;
 const maxRetries = 5;
@@ -71,16 +98,52 @@ const connectWithRetry = async (retries = 0) => {
   }
 };
 
+// New function to test Cloudflare connection with retries
+const testCloudflareWithRetry = async (retries = 0) => {
+  try {
+    const success = await cloudflareService.testConnection();
+    if (success) {
+      console.log("Cloudflare Images connection successful!");
+      return true;
+    }
+    throw new Error("Cloudflare Images connection test failed");
+  } catch (error) {
+    if (retries < maxRetries) {
+      console.error(
+        `Cloudflare connection attempt ${
+          retries + 1
+        } failed, retrying in ${retryDelay}ms...`
+      );
+      await new Promise((resolve) => setTimeout(resolve, retryDelay));
+      return testCloudflareWithRetry(retries + 1);
+    }
+    throw error;
+  }
+};
+
 const start = async () => {
   try {
+    // First test database connection
     await connectWithRetry();
+
+    // Then test Cloudflare connection
+    await testCloudflareWithRetry();
+
+    // If both connections are successful, start the server
     app.listen(port, () =>
       console.log(`Server is listening on http://localhost:${port}`)
     );
   } catch (error) {
-    console.error("Failed to start the server after multiple retries:", error);
+    console.error("Failed to start the server:", error);
+    if (error.message.includes("Cloudflare")) {
+      console.error(
+        "Cloudflare Images service is unavailable. Server cannot start without image upload capability."
+      );
+    }
     process.exit(StatusCodes.INTERNAL_SERVER_ERROR);
   }
 };
 
 start();
+
+module.exports = app;
