@@ -14,23 +14,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 const authenticate = require("./middleware/authentication");
 
-// Routes
-const authRouter = require("./routers/auth");
-const adminRouter = require("./routers/admin");
-const ticketRouter = require("./routers/tickets");
-const machineRouter = require("./routers/machine");
-const dashboardRouter = require("./routers/dashbord");
-const gymRouter = require("./routers/gym");
-const postRoutes = require('./routers/postRoutes');
 
-// Use Routes
-app.use("/api/v1/admin/auth", authRouter);
-app.use("/api/v1/admin/admin", adminRouter);
-app.use("/api/v1/admin/tickets", ticketRouter);
-app.use("/api/v1/admin/machines", machineRouter);
-app.use("/api/v1/admin/dashboard", dashboardRouter);
-app.use("/api/v1/admin/gym", gymRouter);
-app.use('/api/v1/admin/post', postRoutes); // Connect postRoutes
+
 
 // Security Packages
 const helmet = require("helmet");
@@ -40,7 +25,7 @@ const rateLimiter = require("express-rate-limit");
 
 // CORS Configuration
 const corsOptions = {
-  origin: process.env.ALLOWED_ORIGINS?.split(",") || ["http://localhost:6000"],
+  origin: process.env.ALLOWED_ORIGINS?.split(",") || ["http://localhost:6000", "http://localhost:3000"],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   exposedHeaders: ["Content-Range", "X-Content-Range"],
@@ -76,6 +61,25 @@ app.use((err, req, res, next) => {
     error: process.env.NODE_ENV === "production" ? null : err.message,
   });
 });
+
+// Routes
+const authRouter = require("./routers/auth");
+const adminRouter = require("./routers/admin");
+const ticketRouter = require("./routers/tickets");
+const machineRouter = require("./routers/machine");
+const dashboardRouter = require("./routers/dashbord");
+const gymRouter = require("./routers/gym");
+const postRoutes = require('./routers/postRoutes');
+
+// Use Routes
+app.use("/api/v1/admin/auth", authRouter);
+app.use("/api/v1/admin/admin", adminRouter);
+app.use("/api/v1/admin/tickets", ticketRouter);
+app.use("/api/v1/admin/machines", machineRouter);
+app.use("/api/v1/admin/dashboard", dashboardRouter);
+app.use("/api/v1/admin/gym", gymRouter);
+app.use('/api/v1/admin/post', postRoutes); // Connect postRoutes
+
 
 const port = process.env.PORT || 7800;
 const maxRetries = 5;
