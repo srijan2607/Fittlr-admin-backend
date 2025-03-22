@@ -31,9 +31,10 @@ const createGym = async (req, res) => {
       console.log("Image uploaded to Cloudflare:", imageUrl);
     }
 
-    // Check if we have an image URL from either the file upload or request body
+    // If no image was provided, set a default image
     if (!imageUrl) {
-      throw new BadRequestError("Image is required");
+      imageUrl =
+        "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DvH8kYVahdrU&psig=AOvVaw15DcFBbIDAb7jFXHg_h1SG&ust=1742713548705000&source=images&cd=vfe&opi=89978449&ved=0CBEQjRxqFwoTCKCX0IGQnYwDFQAAAAAdAAAAABAE";
     }
 
     // Create the gym with its opening hours in a transaction
@@ -43,7 +44,7 @@ const createGym = async (req, res) => {
         data: {
           name,
           location,
-          imageUrl,
+          imageUrl, // This will now always have a value
           MaxCapacity,
           currnt_users: 0, // Initialize with 0 current users
           userId: userId || undefined, // Optional relation to a user

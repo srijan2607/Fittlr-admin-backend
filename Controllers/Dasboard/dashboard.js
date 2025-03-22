@@ -63,19 +63,107 @@ const getTicketStats = async () => {
   }
 };
 
+// Get detailed ticket information
+const getDetailedTickets = async (req, res) => {
+  try {
+    const {
+      limit = 10,
+      page = 1,
+      status,
+      ticketType,
+      sortBy = "createdAt",
+      sortOrder = "desc",
+    } = req.query;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Build where condition based on filters
+    const where = {};
+    if (status) where.status = status;
+    if (ticketType) where.ticketType = ticketType;
+
+    // Get tickets with pagination
+    const [tickets, totalCount] = await Promise.all([
+      prisma.tickets.findMany({
+        where,
+        orderBy: { [sortBy]: sortOrder },
+        skip,
+        take: parseInt(limit),
+        include: {
+          user: {
+            select: {
+              googleId: true,
+              name: true,
+              email: true,
+              profileImg: true,
+            },
+          },
+          machine: {
+            include: {
+              gym: {
+                select: {
+                  id: true,
+                  name: true,
+                  location: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+      prisma.tickets.count({ where }),
+    ]);
+
+    res.status(200).json({
+      tickets,
+      pagination: {
+        total: totalCount,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(totalCount / parseInt(limit)),
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching detailed ticket information:", error);
+    res.status(500).json({ error: "Failed to fetch ticket details" });
+  }
+};
+
 // Get all dashboard statistics
 const getDashboardStats = async (req, res) => {
   try {
-    const [userStats, equipmentStats, ticketStats] = await Promise.all([
-      getUserStats(),
-      getEquipmentStats(),
-      getTicketStats(),
-    ]);
+    const [userStats, equipmentStats, ticketStats, recentTickets] =
+      await Promise.all([
+        getUserStats(),
+        getEquipmentStats(),
+        getTicketStats(),
+        // Get 5 most recent tickets
+        prisma.tickets.findMany({
+          take: 5,
+          orderBy: { createdAt: "desc" },
+          include: {
+            user: {
+              select: {
+                name: true,
+                email: true,
+              },
+            },
+            machine: {
+              select: {
+                id: true,
+                name: true,
+                status: true,
+              },
+            },
+          },
+        }),
+      ]);
 
     res.status(200).json({
       users: userStats,
       equipment: equipmentStats,
       tickets: ticketStats,
+      recentTickets: recentTickets,
     });
   } catch (error) {
     console.error("Error fetching dashboard stats:", error);
@@ -88,4 +176,5 @@ module.exports = {
   getUserStats,
   getEquipmentStats,
   getTicketStats,
+  getDetailedTickets,
 };
