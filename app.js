@@ -21,6 +21,7 @@ const ticketRouter = require("./routers/tickets");
 const machineRouter = require("./routers/machine");
 const dashboardRouter = require("./routers/dashbord");
 const gymRouter = require("./routers/gym");
+const postRoutes = require('./routers/postRoutes');
 
 // Use Routes
 app.use("/api/v1/admin/auth", authRouter);
@@ -29,6 +30,7 @@ app.use("/api/v1/admin/tickets", ticketRouter);
 app.use("/api/v1/admin/machines", machineRouter);
 app.use("/api/v1/admin/dashboard", dashboardRouter);
 app.use("/api/v1/admin/gym", gymRouter);
+app.use('/api/v1/admin/post', postRoutes); // Connect postRoutes
 
 // Security Packages
 const helmet = require("helmet");
