@@ -6,7 +6,7 @@
 
 generator client {
   provider = "prisma-client-js"
-  previewFeatures = ["fullTextSearchPostgres"]
+  previewFeatures = ["fullTextSearch"]
 }
 datasource db {
   provider = "postgresql"
@@ -23,8 +23,9 @@ model User {
   FitnessToken FitnessToken?
   GymBooking  GymBooking[]
   WorkoutPlan WorkoutPlan[]
-
   tickets tickets[]
+  gym         Gym?    // Add this relation field
+
 }
 
 model Admin {
@@ -36,6 +37,7 @@ model Admin {
   updatedAt   DateTime @updatedAt
   gymId       Int?     @unique
   gym         Gym?     @relation(fields: [gymId], references: [id])
+
 }
 
 model FitnessToken {
@@ -62,7 +64,10 @@ model Gym {
   openingHours  OpeningHours[]
   admin         Admin?
   GymBooking    GymBooking[]
-}
+ userId        String?       @unique // This makes it a one-to-one relation
+  user          User?         @relation(fields: [userId], references: [googleId])
+}  
+
 
 model OpeningHours {
   id          Int      @id @default(autoincrement())
@@ -82,11 +87,13 @@ model Machine {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   needService Boolean  @default(false)
+  status      String   @default("active") // active, inactive, maintenance
   service     Service?
   gymId       Int
   gym         Gym      @relation(fields: [gymId], references: [id])
   MachineBooking MachineBooking[]
   Exercise    Exercise[]
+  tickets     tickets[] // Relation to tickets
 }
 
 model Service {
@@ -145,13 +152,17 @@ model Exercise {
   machineId   Int?
   machine     Machine?  @relation(fields: [machineId], references: [id])
 }
-model tickets{
+
+model tickets {
   id          Int       @id @default(autoincrement())
   userId      String
   user        User      @relation(fields: [userId], references: [googleId])
   title       String
   description String?
   status      String   @default("open") // open, closed
+  ticketType  String   @default("user") // user, service
+  machineId   Int?
+  machine     Machine? @relation(fields: [machineId], references: [id])
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }

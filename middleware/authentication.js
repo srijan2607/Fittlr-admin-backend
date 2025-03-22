@@ -4,9 +4,7 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 const authenticateUser = async (req, res, next) => {
-  // First check if user is authenticated via session
   if (req.isAuthenticated() && req.user) {
-    // Session authentication passed, continue to next middleware
     return next();
   }
 
