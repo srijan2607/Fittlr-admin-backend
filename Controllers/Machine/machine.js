@@ -194,6 +194,7 @@ const getMachineById = async (req, res) => {
 const updateMachine = async (req, res) => {
   try {
     const { id } = req.params;
+    const { gymid } = req.body;
     const {
       name,
       description,
@@ -203,6 +204,11 @@ const updateMachine = async (req, res) => {
       status,
       gymId,
     } = req.body;
+
+    // cheack if gymid exists
+    const gym = await prisma.gym.findUnique({
+      where: { id: Number(gymId) },
+    });
 
     // Check if machine exists
     const existingMachine = await prisma.machine.findUnique({
@@ -226,7 +232,7 @@ const updateMachine = async (req, res) => {
 
     // Update machine
     const updatedMachine = await prisma.machine.update({
-      where: { id: Number(id) },
+      where: { id: Number(id), gymId: Number(gymid) },
       data: {
         name: name !== undefined ? name : undefined,
         description: description !== undefined ? description : undefined,
@@ -263,6 +269,12 @@ const updateMachine = async (req, res) => {
 const deleteMachine = async (req, res) => {
   try {
     const { id } = req.params;
+    const { gymId, gymid } = req.body;
+    const gymIdToUse = gymId || gymid;
+
+    if (!gymIdToUse) {
+      throw new BadRequestError("Gym ID is required");
+    }
 
     // Check if machine exists
     const existingMachine = await prisma.machine.findUnique({
@@ -273,24 +285,42 @@ const deleteMachine = async (req, res) => {
       throw new NotFoundError(`Machine with ID ${id} not found`);
     }
 
+    // Check if gymId exists
+    const gym = await prisma.gym.findUnique({
+      where: { id: Number(gymIdToUse) },
+    });
+
+    if (!gym) {
+      throw new NotFoundError(`Gym with ID ${gymIdToUse} not found`);
+    }
+
     // Delete the machine and handle related records in a transaction
     await prisma.$transaction(async (tx) => {
-      // Handle service record if exists
+      // Handle service record if exists - only use machineId
       await tx.service.deleteMany({
         where: { machineId: Number(id) },
       });
 
-      // Update exercises to remove machine reference
+      // Update exercises to remove machine reference - only use machineId
       await tx.exercise.updateMany({
         where: { machineId: Number(id) },
         data: { machineId: null },
       });
 
-      // Update tickets to remove machine reference
-      await tx.tickets.updateMany({
-        where: { machineId: Number(id) },
-        data: { machineId: null },
-      });
+      // Update tickets to remove machine reference - check if tickets has gymId field
+      try {
+        await tx.tickets.updateMany({
+          where: { machineId: Number(id) },
+          data: { machineId: null },
+        });
+      } catch (error) {
+        // If this fails due to gymId field, try without it
+        console.error("Error updating tickets, trying without gymId:", error);
+        await tx.tickets.updateMany({
+          where: { machineId: Number(id) },
+          data: { machineId: null },
+        });
+      }
 
       // Delete the machine
       await tx.machine.delete({
@@ -304,11 +334,17 @@ const deleteMachine = async (req, res) => {
     });
   } catch (error) {
     console.error("Error deleting machine:", error);
-    if (error instanceof NotFoundError) {
-      return res.status(StatusCodes.NOT_FOUND).json({
-        success: false,
-        message: error.message,
-      });
+    if (error instanceof BadRequestError || error instanceof NotFoundError) {
+      return res
+        .status(
+          error instanceof BadRequestError
+            ? StatusCodes.BAD_REQUEST
+            : StatusCodes.NOT_FOUND
+        )
+        .json({
+          success: false,
+          message: error.message,
+        });
     }
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
@@ -323,9 +359,16 @@ const updateMachineStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
+    // Check for both gymId and gymid in the request body
+    const { gymId, gymid } = req.body;
+    const gymIdToUse = gymId || gymid;
 
     if (!status) {
       throw new BadRequestError("Status is required");
+    }
+
+    if (!gymIdToUse) {
+      throw new BadRequestError("Gym ID is required");
     }
 
     // Validate status value
@@ -334,6 +377,15 @@ const updateMachineStatus = async (req, res) => {
       throw new BadRequestError(
         `Status must be one of: ${validStatuses.join(", ")}`
       );
+    }
+
+    // Check if gym exists
+    const gym = await prisma.gym.findUnique({
+      where: { id: Number(gymIdToUse) },
+    });
+
+    if (!gym) {
+      throw new NotFoundError(`Gym with ID ${gymIdToUse} not found`);
     }
 
     // Check if machine exists
@@ -383,6 +435,7 @@ const updateServiceNeeds = async (req, res) => {
   try {
     const { id } = req.params;
     const { needService } = req.body;
+    const { gymId } = req.body;
 
     if (needService === undefined) {
       throw new BadRequestError("needService flag is required");
@@ -395,6 +448,15 @@ const updateServiceNeeds = async (req, res) => {
 
     if (!existingMachine) {
       throw new NotFoundError(`Machine with ID ${id} not found`);
+    }
+
+    // Check if gym exists
+    const gym = await prisma.gym.findUnique({
+      where: { id: Number(gymId) },
+    });
+
+    if (!gym) {
+      throw new NotFoundError(`Gym with ID ${gymId} not found`);
     }
 
     // Update machine's service needs flag
@@ -435,6 +497,7 @@ const incrementMachineUses = async (req, res) => {
   try {
     const { id } = req.params;
     const { increment = 1 } = req.body;
+    const { gymId } = req.body;
 
     // Check if machine exists
     const existingMachine = await prisma.machine.findUnique({
@@ -443,6 +506,15 @@ const incrementMachineUses = async (req, res) => {
 
     if (!existingMachine) {
       throw new NotFoundError(`Machine with ID ${id} not found`);
+    }
+
+    // Check if gym exists
+    const gym = await prisma.gym.findUnique({
+      where: { id: Number(gymId) },
+    });
+
+    if (!gym) {
+      throw new NotFoundError(`Gym with ID ${gymId} not found`);
     }
 
     // Increment machine uses

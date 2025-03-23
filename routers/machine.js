@@ -16,7 +16,7 @@ router.post("/create", createMachine);
 router.get("/all", getAllMachines);
 router.get("/:id", getMachineById);
 router.put("/:id", updateMachine);
-router.delete("/:id", deleteMachine);
+router.delete("/delete/:id", deleteMachine);
 router.put("/status/:id", updateMachineStatus);
 router.put("/service/:id", updateServiceNeeds);
 router.put("/increment/:id", incrementMachineUses);

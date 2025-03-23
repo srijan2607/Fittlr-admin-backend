@@ -385,7 +385,6 @@ const updateCurrentUsers = async (req, res) => {
       throw new NotFoundError(`Gym with ID ${id} not found`);
     }
 
-    // Ensure count doesn't exceed max capacity
     if (count > gym.MaxCapacity) {
       throw new BadRequestError(
         `Current users count cannot exceed maximum capacity of ${gym.MaxCapacity}`
