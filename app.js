@@ -14,9 +14,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 const authenticate = require("./middleware/authentication");
 
-
-
-
 // Security Packages
 const helmet = require("helmet");
 const cors = require("cors");
@@ -25,7 +22,10 @@ const rateLimiter = require("express-rate-limit");
 
 // CORS Configuration
 const corsOptions = {
-  origin: process.env.ALLOWED_ORIGINS?.split(",") || ["http://localhost:6000", "http://localhost:3000"],
+  origin: process.env.ALLOWED_ORIGINS?.split(",") || [
+    "http://localhost:6000",
+    "http://localhost:3000",
+  ],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   exposedHeaders: ["Content-Range", "X-Content-Range"],
@@ -69,7 +69,8 @@ const ticketRouter = require("./routers/tickets");
 const machineRouter = require("./routers/machine");
 const dashboardRouter = require("./routers/dashbord");
 const gymRouter = require("./routers/gym");
-const postRoutes = require('./routers/postRoutes');
+const postRoutes = require("./routers/postRoutes");
+const usersRoute = require("./routers/fetchusers");
 
 // Use Routes
 app.use("/api/v1/admin/auth", authRouter);
@@ -78,8 +79,8 @@ app.use("/api/v1/admin/tickets", ticketRouter);
 app.use("/api/v1/admin/machines", machineRouter);
 app.use("/api/v1/admin/dashboard", dashboardRouter);
 app.use("/api/v1/admin/gym", gymRouter);
-app.use('/api/v1/admin/post', postRoutes); // Connect postRoutes
-
+app.use("/api/v1/admin/post", postRoutes); // Connect postRoutes
+app.use("/api/v1/admin/users", usersRoute); // Connect usersRoute
 
 const port = process.env.PORT || 7800;
 const maxRetries = 5;
