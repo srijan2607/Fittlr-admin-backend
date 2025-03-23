@@ -1,5 +1,9 @@
 # Fittlr Admin Backend
 
+## Postman Link 
+
+https://www.postman.com/inculcate-team/workspace/fittlr/request/40649936-14432d69-3c8d-4265-b6f7-62b3c07896eb?action=share&creator=40649936&ctx=documentation
+
 ## Introduction
 
 Fittlr Admin Backend is the administrative panel for the Fittlr application. It provides a backend service for managing gyms, machines, tickets, and other administrative tasks. This backend is built using Node.js, Express, and Prisma ORM.
